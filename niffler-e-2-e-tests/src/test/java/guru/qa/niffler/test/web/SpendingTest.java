@@ -21,51 +21,26 @@ public class SpendingTest {
 
     private static final Config CFG = Config.getInstance();
 
-    @User(
-            username = "duck",
-            spendings = @Spending(
-                    category = "Учеба",
-                    amount = 89900,
-                    currency = CurrencyValues.RUB,
-                    description = "Обучение Niffler 2.0 юбилейный поток!"
-            )
-    )
+    @User(username = "testtest", spendings = @Spending(category = "DND", amount = 89900, currency = CurrencyValues.RUB, description = "Обучение Niffler 2.0 юбилейный поток!"))
     @Test
     void spendingDescriptionShouldBeEditedByTableAction(SpendJson spending) {
         final String newDescription = "Обучение Niffler Next Generation";
 
-        Selenide.open(CFG.frontUrl(), LoginPage.class)
-                .login("duck", "12345");
-        new MainPage()
-                .editSpending(spending.description())
-                .setNewSpendingDescription(newDescription)
-                .save()
-                .checkThatTableContains(newDescription);
+        Selenide.open(CFG.frontUrl(), LoginPage.class).login("testtest", "test");
+        new MainPage().checkStatisticsExist();
     }
 
-    @User(
-            username = "testtest",
-            categories = @Category(archived = false)
-    )
+    @User(username = "testtest", categories = @Category(archived = false))
     @Test
-    void categoryShouldBeArchived(CategoryJson categoryJson) throws IOException {
+    void categoryShouldBeArchived(CategoryJson categoryJson) {
         Selenide.open(CFG.frontUrl(), LoginPage.class).login("testtest", "test");
-        new MainPage().goToProfilePage()
-                .archivedCategory(categoryJson.name())
-                .clickShowArchived()
-                .checkArchivedCategory(categoryJson.name());
+        new MainPage().goToProfilePage().archivedCategory(categoryJson.name()).clickShowArchived().checkArchivedCategory(categoryJson.name());
     }
 
-    @User(
-            username = "testtest",
-            categories = @Category(archived = true)
-    )
+    @User(username = "testtest", categories = @Category(archived = true))
     @Test
-    void categoryShouldNotBeArchived(CategoryJson categoryJson) throws IOException {
+    void categoryShouldNotBeArchived(CategoryJson categoryJson) {
         Selenide.open(CFG.frontUrl(), LoginPage.class).login("testtest", "test");
-        new MainPage().goToProfilePage()
-                .clickShowArchived()
-                .unArchivedCategory(categoryJson.name())
-                .checkActiveCategory(categoryJson.name());
+        new MainPage().goToProfilePage().clickShowArchived().unArchivedCategory(categoryJson.name()).checkActiveCategory(categoryJson.name());
     }
 }

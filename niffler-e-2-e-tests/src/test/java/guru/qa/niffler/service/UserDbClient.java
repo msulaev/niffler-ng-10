@@ -5,17 +5,14 @@ import guru.qa.niffler.data.entity.auth.AuthUserEntity;
 import guru.qa.niffler.data.entity.auth.Authority;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.entity.userdata.UserEntity;
-import guru.qa.niffler.data.impl.AuthAuthorityDaoJdbc;
-import guru.qa.niffler.data.impl.AuthUserDaoJdbc;
-import guru.qa.niffler.data.impl.UserdataUserDaoJdbc;
+import guru.qa.niffler.data.impl.*;
 import guru.qa.niffler.model.UserJson;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
 
-import static guru.qa.niffler.data.Databases.XaFunction;
-import static guru.qa.niffler.data.Databases.xaTransaction;
+import static guru.qa.niffler.data.Databases.*;
 
 public class UserDbClient implements UserClient {
 
@@ -55,11 +52,44 @@ public class UserDbClient implements UserClient {
                                     ue.setUsername(user.username());
                                     ue.setFullname(user.fullname());
                                     ue.setCurrency(user.currency());
-                                    return new UserdataUserDaoJdbc(con).createUser(ue);
+                                    return new UserDataUserDaoJdbc(con).createUser(ue);
                                 },
                                 CFG.userdataJdbcUrl()
                         )
                 ),
+                null
+        );
+    }
+
+    public UserJson createUserSpringJdbc(UserJson user) {
+        AuthUserEntity authUser = new AuthUserEntity();
+        authUser.setUsername(user.username());
+        authUser.setPassword(pe.encode("12345"));
+        authUser.setEnabled(true);
+        authUser.setAccountNonExpired(true);
+        authUser.setAccountNonLocked(true);
+        authUser.setCredentialsNonExpired(true);
+
+        AuthUserEntity createdAuthUser = new AuthUserDaoSpringJdbc(dataSource(CFG.authJdbcUrl()))
+                .create(authUser);
+
+        AuthorityEntity[] authorityEntities = Arrays.stream(Authority.values()).map(
+                e -> {
+                    AuthorityEntity ae = new AuthorityEntity();
+                    ae.setUserId(createdAuthUser.getId());
+                    ae.setAuthority(e);
+                    return ae;
+                }
+        ).toArray(AuthorityEntity[]::new);
+
+        new AuthAuthorityDaoSpringJdbc(dataSource(CFG.authJdbcUrl()))
+                .create(authorityEntities);
+
+        return UserJson.fromEntity(
+                new UserDataDaoSpringJdbc(dataSource(CFG.userdataJdbcUrl()))
+                        .createUser(
+                                UserEntity.fromJson(user)
+                        ),
                 null
         );
     }

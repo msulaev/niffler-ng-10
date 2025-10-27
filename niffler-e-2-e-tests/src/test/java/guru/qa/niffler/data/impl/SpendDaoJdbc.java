@@ -1,6 +1,5 @@
 package guru.qa.niffler.data.impl;
 
-import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.SpendDao;
 import guru.qa.niffler.data.entity.spend.CategoryEntity;
 import guru.qa.niffler.data.entity.spend.SpendEntity;
@@ -63,8 +62,8 @@ public class SpendDaoJdbc implements SpendDao {
                     spend.setAmount(rs.getDouble("amount"));
                     spend.setDescription(rs.getString("description"));
 
-                    UUID categoryId = rs.getObject("category_id", UUID.class);
-                    CategoryEntity category = findCategoryById(connection, categoryId);
+                    CategoryEntity category = new CategoryEntity();
+                    category.setId(rs.getObject("category_id", UUID.class));
                     spend.setCategory(category);
 
                     return Optional.of(spend);
@@ -94,8 +93,8 @@ public class SpendDaoJdbc implements SpendDao {
                     spend.setAmount(rs.getDouble("amount"));
                     spend.setDescription(rs.getString("description"));
 
-                    UUID categoryId = rs.getObject("category_id", UUID.class);
-                    CategoryEntity category = findCategoryById(connection, categoryId);
+                    CategoryEntity category = new CategoryEntity();
+                    category.setId(rs.getObject("category_id", UUID.class));
                     spend.setCategory(category);
 
                     spends.add(spend);
@@ -134,8 +133,8 @@ public class SpendDaoJdbc implements SpendDao {
                     spend.setAmount(rs.getDouble("amount"));
                     spend.setDescription(rs.getString("description"));
 
-                    UUID categoryId = rs.getObject("category_id", UUID.class);
-                    CategoryEntity category = findCategoryById(connection, categoryId);
+                    CategoryEntity category = new CategoryEntity();
+                    category.setId(rs.getObject("category_id", UUID.class));
                     spend.setCategory(category);
 
                     spends.add(spend);
@@ -146,23 +145,5 @@ public class SpendDaoJdbc implements SpendDao {
             throw new RuntimeException(e);
         }
         return spends;
-    }
-
-    private CategoryEntity findCategoryById(Connection connection, UUID categoryId) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM category WHERE id = ?")) {
-            ps.setObject(1, categoryId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    CategoryEntity category = new CategoryEntity();
-                    category.setId(rs.getObject("id", UUID.class));
-                    category.setUsername(rs.getString("username"));
-                    category.setName(rs.getString("name"));
-                    category.setArchived(rs.getBoolean("archived"));
-                    return category;
-                } else {
-                    throw new SQLException("Can't find category by id: " + categoryId);
-                }
-            }
-        }
     }
 }

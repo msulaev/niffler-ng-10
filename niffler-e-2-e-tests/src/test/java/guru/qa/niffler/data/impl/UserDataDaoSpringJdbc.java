@@ -9,7 +9,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
-import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
@@ -25,7 +24,11 @@ public class UserDataDaoSpringJdbc implements UserDataUserDao {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
         KeyHolder kh = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
-            PreparedStatement ps = con.prepareStatement("INSERT INTO \"user\" (username, currency, firstname, surname, photo, photo_small, full_name) " + "VALUES (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO \"user\" (username, currency, firstname, surname, photo, photo_small, full_name) " +
+                            "VALUES (?,?,?,?,?,?,?)",
+                    Statement.RETURN_GENERATED_KEYS
+            );
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getCurrency().name());
             ps.setString(3, user.getFirstname());
@@ -48,18 +51,27 @@ public class UserDataDaoSpringJdbc implements UserDataUserDao {
 
     @Override
     public void delete(UserEntity user) {
-
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public Optional<UserEntity> findById(UUID id) {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
-        return Optional.ofNullable(jdbcTemplate.queryForObject("SELECT * FROM \"user\" WHERE id = ?", UserdataUserEntityRowMapper.instance, id));
+        return Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        "SELECT * FROM \"user\" WHERE id = ?",
+                        UserdataUserEntityRowMapper.instance,
+                        id
+                )
+        );
     }
 
     public List<UserEntity> findAll() {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
-        return jdbcTemplate.query("SELECT * FROM \"user\"", UserdataUserEntityRowMapper.instance);
+        return jdbcTemplate.query(
+                "SELECT * FROM \"user\"",
+                UserdataUserEntityRowMapper.instance
+        );
     }
 }
 

@@ -55,7 +55,7 @@ public class JdbcTest {
     @Test
     void createAuthUser() {
         JdbcTransactionTemplate txTemplate = new JdbcTransactionTemplate(CFG.authJdbcUrl());
-        
+
         AuthUserEntity createdUser = txTemplate.execute(() -> {
             AuthUserEntity user = new AuthUserEntity();
             user.setUsername(RandomDataUtils.randomUsername());
@@ -80,7 +80,7 @@ public class JdbcTest {
     void createAuthorities() {
         String testUsername = RandomDataUtils.randomUsername();
         JdbcTransactionTemplate txTemplate = new JdbcTransactionTemplate(CFG.authJdbcUrl());
-        
+
         UUID userId = txTemplate.execute(() -> {
             AuthUserEntity user = new AuthUserEntity();
             user.setUsername(testUsername);
@@ -94,11 +94,11 @@ public class JdbcTest {
 
         txTemplate.execute(() -> {
             AuthorityEntity readAuth = new AuthorityEntity();
-            readAuth.setUserId(userId);
+            readAuth.setId(userId);
             readAuth.setAuthority(Authority.read);
 
             AuthorityEntity writeAuth = new AuthorityEntity();
-            writeAuth.setUserId(userId);
+            writeAuth.setId(userId);
             writeAuth.setAuthority(Authority.write);
 
             new AuthAuthorityDaoJdbc().create(readAuth, writeAuth);
@@ -117,10 +117,10 @@ public class JdbcTest {
     void xaTransactionRollback() {
         String testUsername = RandomDataUtils.randomUsername();
         XaTransactionTemplate xaTxTemplate = new XaTransactionTemplate(
-            CFG.authJdbcUrl(), 
+            CFG.authJdbcUrl(),
             CFG.userdataJdbcUrl()
         );
-        
+
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
             xaTxTemplate.execute(
                 () -> {
@@ -145,7 +145,7 @@ public class JdbcTest {
     @Test
     void transactionIsolationLevel() {
         JdbcTransactionTemplate txTemplate = new JdbcTransactionTemplate(CFG.authJdbcUrl());
-        
+
         txTemplate.execute(() -> {
             try {
                 Connection con = holder(CFG.authJdbcUrl()).connection();
@@ -160,10 +160,10 @@ public class JdbcTest {
     @Test
     void xaTransactionIsolationLevel() {
         XaTransactionTemplate xaTxTemplate = new XaTransactionTemplate(
-            CFG.authJdbcUrl(), 
+            CFG.authJdbcUrl(),
             CFG.userdataJdbcUrl()
         );
-        
+
         xaTxTemplate.execute(
             () -> {
                 try {

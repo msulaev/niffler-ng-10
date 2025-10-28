@@ -1,60 +1,41 @@
-package guru.qa.niffler.data.entity.auth;
+package guru.qa.niffler.data.entity.userdata;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
-
-import static jakarta.persistence.FetchType.EAGER;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "\"user\"")
-public class AuthUserEntity implements Serializable {
+@Table(name = "push_tokens")
+public class PushTokenEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.AUTO)
   @Column(name = "id", nullable = false, columnDefinition = "UUID default gen_random_uuid()")
   private UUID id;
 
+  @ManyToOne
+  @JoinColumn(name = "user_id")
+  private UserEntity user;
+
   @Column(nullable = false, unique = true)
-  private String username;
+  private String token;
+
+  private String userAgent;
 
   @Column(nullable = false)
-  private String password;
+  private boolean active = true;
 
-  @Column(nullable = false)
-  private Boolean enabled;
+  @Column(name = "created_at", columnDefinition = "DATE", nullable = false)
+  private Date createdAt;
 
-  @Column(name = "account_non_expired", nullable = false)
-  private Boolean accountNonExpired;
-
-  @Column(name = "account_non_locked", nullable = false)
-  private Boolean accountNonLocked;
-
-  @Column(name = "credentials_non_expired", nullable = false)
-  private Boolean credentialsNonExpired;
-
-  @OneToMany(fetch = EAGER, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
-  private List<AuthorityEntity> authorities = new ArrayList<>();
-
-  public void addAuthorities(AuthorityEntity... authorities) {
-    for (AuthorityEntity authority : authorities) {
-      this.authorities.add(authority);
-      authority.setUser(this);
-    }
-  }
-
-  public void removeAuthority(AuthorityEntity authority) {
-    this.authorities.remove(authority);
-    authority.setUser(null);
-  }
+  @Column(name = "last_seen_at", columnDefinition = "DATE", nullable = false)
+  private Date lastSeenAt;
 
   @Override
   public final boolean equals(Object o) {
@@ -63,7 +44,7 @@ public class AuthUserEntity implements Serializable {
     Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
     Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
     if (thisEffectiveClass != oEffectiveClass) return false;
-    AuthUserEntity that = (AuthUserEntity) o;
+    PushTokenEntity that = (PushTokenEntity) o;
     return getId() != null && Objects.equals(getId(), that.getId());
   }
 

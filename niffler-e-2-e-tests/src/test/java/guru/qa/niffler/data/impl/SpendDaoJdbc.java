@@ -49,11 +49,7 @@ public class SpendDaoJdbc implements SpendDao {
 
     @Override
     public Optional<SpendEntity> findSpendById(UUID id) {
-        try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT s.*, c.id as category_id, c.username as category_username, c.name as category_name, c.archived as category_archived " +
-                        "FROM spend s " +
-                        "JOIN category c ON s.category_id = c.id " +
-                        "WHERE s.id = ?")) {
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM spend WHERE id = ?")) {
             ps.setObject(1, id);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -68,9 +64,6 @@ public class SpendDaoJdbc implements SpendDao {
 
                     CategoryEntity category = new CategoryEntity();
                     category.setId(rs.getObject("category_id", UUID.class));
-                    category.setUsername(rs.getString("category_username"));
-                    category.setName(rs.getString("category_name"));
-                    category.setArchived(rs.getBoolean("category_archived"));
                     spend.setCategory(category);
 
                     return Optional.of(spend);
@@ -87,11 +80,7 @@ public class SpendDaoJdbc implements SpendDao {
     @Override
     public List<SpendEntity> findAllByUsername(String username) {
         List<SpendEntity> spends = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT s.*, c.id as category_id, c.username as category_username, c.name as category_name, c.archived as category_archived " +
-                        "FROM spend s " +
-                        "JOIN category c ON s.category_id = c.id " +
-                        "WHERE s.username = ?")) {
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM spend WHERE username = ?")) {
             ps.setString(1, username);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -106,9 +95,6 @@ public class SpendDaoJdbc implements SpendDao {
 
                     CategoryEntity category = new CategoryEntity();
                     category.setId(rs.getObject("category_id", UUID.class));
-                    category.setUsername(rs.getString("category_username"));
-                    category.setName(rs.getString("category_name"));
-                    category.setArchived(rs.getBoolean("category_archived"));
                     spend.setCategory(category);
 
                     spends.add(spend);
@@ -130,5 +116,34 @@ public class SpendDaoJdbc implements SpendDao {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<SpendEntity> findAll() {
+        List<SpendEntity> spends = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM spend")) {
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SpendEntity spend = new SpendEntity();
+                    spend.setId(rs.getObject("id", UUID.class));
+                    spend.setUsername(rs.getString("username"));
+                    spend.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
+                    spend.setSpendDate(rs.getDate("spend_date"));
+                    spend.setAmount(rs.getDouble("amount"));
+                    spend.setDescription(rs.getString("description"));
+
+                    CategoryEntity category = new CategoryEntity();
+                    category.setId(rs.getObject("category_id", UUID.class));
+                    spend.setCategory(category);
+
+                    spends.add(spend);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return spends;
     }
 }

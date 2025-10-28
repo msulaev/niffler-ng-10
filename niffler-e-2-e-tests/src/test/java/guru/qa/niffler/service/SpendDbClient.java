@@ -25,9 +25,12 @@ public class SpendDbClient implements SpendClient {
                         .create(spendEntity.getCategory());
                 spendEntity.setCategory(categoryEntity);
             }
-            return SpendJson.fromEntity(
-                    new SpendDaoJdbc(connection).create(spendEntity)
-            );
+            SpendEntity createdSpend = new SpendDaoJdbc(connection).create(spendEntity);
+            CategoryEntity fullCategory = new CategoryDaoJdbc(connection)
+                    .find(createdSpend.getCategory().getId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            createdSpend.setCategory(fullCategory);
+            return SpendJson.fromEntity(createdSpend);
         }, CFG.spendJdbcUrl());
     }
 

@@ -66,12 +66,5 @@ public class UserDataDaoSpringJdbc implements UserDataUserDao {
         );
     }
 
-    public List<UserEntity> findAll() {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
-        return jdbcTemplate.query(
-                "SELECT * FROM \"user\"",
-                UserdataUserEntityRowMapper.instance
-        );
-    }
 }
 

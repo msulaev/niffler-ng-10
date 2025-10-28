@@ -4,8 +4,10 @@ import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.UserDataUserDao;
 import guru.qa.niffler.data.entity.userdata.UserEntity;
 import guru.qa.niffler.model.CurrencyValues;
+import org.springframework.data.transaction.ChainedTransactionManager;
 
 import java.sql.*;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 

@@ -11,6 +11,7 @@ import guru.qa.niffler.data.entity.userdata.UserEntity;
 import guru.qa.niffler.data.impl.AuthAuthorityDaoSpringJdbc;
 import guru.qa.niffler.data.impl.AuthUserDaoSpringJdbc;
 import guru.qa.niffler.data.impl.UserDataDaoSpringJdbc;
+import guru.qa.niffler.data.tpl.ChainedTransactionTemplate;
 import guru.qa.niffler.data.tpl.DataSources;
 import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
@@ -40,7 +41,6 @@ public class UserDbClient implements UserClient {
             CFG.authJdbcUrl(),
             CFG.userdataJdbcUrl()
     );
-
 
     @Override
     public UserJson createUser(UserJson user) {

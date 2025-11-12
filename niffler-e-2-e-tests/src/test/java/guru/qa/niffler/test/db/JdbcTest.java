@@ -1,4 +1,4 @@
-package guru.qa.niffler.test;
+package guru.qa.niffler.test.db;
 
 import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
@@ -6,6 +6,8 @@ import guru.qa.niffler.data.entity.auth.Authority;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.impl.AuthAuthorityDaoJdbc;
 import guru.qa.niffler.data.impl.AuthUserDaoJdbc;
+import guru.qa.niffler.data.tpl.JdbcTransactionTemplate;
+import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.CategoryJson;
 import guru.qa.niffler.model.CurrencyValues;
 import guru.qa.niffler.model.SpendJson;
@@ -20,7 +22,7 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
-import static guru.qa.niffler.data.Databases.*;
+import static guru.qa.niffler.data.tpl.Connections.holder;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JdbcTest {
@@ -52,7 +54,9 @@ public class JdbcTest {
 
     @Test
     void createAuthUser() {
-        AuthUserEntity createdUser = transaction(con -> {
+        JdbcTransactionTemplate txTemplate = new JdbcTransactionTemplate(CFG.authJdbcUrl());
+        
+        AuthUserEntity createdUser = txTemplate.execute(() -> {
             AuthUserEntity user = new AuthUserEntity();
             user.setUsername(RandomDataUtils.randomUsername());
             user.setPassword(RandomDataUtils.randomSentence(3));
@@ -60,15 +64,14 @@ public class JdbcTest {
             user.setAccountNonExpired(true);
             user.setAccountNonLocked(true);
             user.setCredentialsNonExpired(true);
-            return new AuthUserDaoJdbc(con).create(user);
-        }, CFG.authJdbcUrl());
+            return new AuthUserDaoJdbc().create(user);
+        });
 
         assertNotNull(createdUser.getId());
         
-        Optional<AuthUserEntity> foundUser = transaction((Connection con) -> 
-            new AuthUserDaoJdbc(con).findById(createdUser.getId()), 
-            CFG.authJdbcUrl()
-        );
+        Optional<AuthUserEntity> foundUser = txTemplate.execute(() -> {
+            return new AuthUserDaoJdbc().findById(createdUser.getId());
+        });
 
         assertTrue(foundUser.isPresent());
     }
@@ -76,8 +79,9 @@ public class JdbcTest {
     @Test
     void createAuthorities() {
         String testUsername = RandomDataUtils.randomUsername();
+        JdbcTransactionTemplate txTemplate = new JdbcTransactionTemplate(CFG.authJdbcUrl());
         
-        UUID userId = transaction(con -> {
+        UUID userId = txTemplate.execute(() -> {
             AuthUserEntity user = new AuthUserEntity();
             user.setUsername(testUsername);
             user.setPassword(RandomDataUtils.randomSentence(3));
@@ -85,10 +89,10 @@ public class JdbcTest {
             user.setAccountNonExpired(true);
             user.setAccountNonLocked(true);
             user.setCredentialsNonExpired(true);
-            return new AuthUserDaoJdbc(con).create(user).getId();
-        }, CFG.authJdbcUrl());
+            return new AuthUserDaoJdbc().create(user).getId();
+        });
 
-        transaction((Connection con) -> {
+        txTemplate.execute(() -> {
             AuthorityEntity readAuth = new AuthorityEntity();
             readAuth.setUserId(userId);
             readAuth.setAuthority(Authority.read);
@@ -97,13 +101,13 @@ public class JdbcTest {
             writeAuth.setUserId(userId);
             writeAuth.setAuthority(Authority.write);
 
-            new AuthAuthorityDaoJdbc(con).create(readAuth, writeAuth);
-        }, CFG.authJdbcUrl());
+            new AuthAuthorityDaoJdbc().create(readAuth, writeAuth);
+            return null;
+        });
 
-        Optional<AuthUserEntity> userWithAuthorities = transaction((Connection con) ->
-            new AuthUserDaoJdbc(con).findById(userId),
-            CFG.authJdbcUrl()
-        );
+        Optional<AuthUserEntity> userWithAuthorities = txTemplate.execute(() -> {
+            return new AuthUserDaoJdbc().findById(userId);
+        });
 
         assertTrue(userWithAuthorities.isPresent());
         assertEquals(testUsername, userWithAuthorities.get().getUsername());
@@ -112,28 +116,26 @@ public class JdbcTest {
     @Test
     void xaTransactionRollback() {
         String testUsername = RandomDataUtils.randomUsername();
+        XaTransactionTemplate xaTxTemplate = new XaTransactionTemplate(
+            CFG.authJdbcUrl(), 
+            CFG.userdataJdbcUrl()
+        );
         
         RuntimeException exception = assertThrows(RuntimeException.class, () ->
-            xaTransaction(
-                new XaFunction<>(
-                    con -> {
-                        AuthUserEntity authUser = new AuthUserEntity();
-                        authUser.setUsername(testUsername);
-                        authUser.setPassword(RandomDataUtils.randomSentence(3));
-                        authUser.setEnabled(true);
-                        authUser.setAccountNonExpired(true);
-                        authUser.setAccountNonLocked(true);
-                        authUser.setCredentialsNonExpired(true);
-                        return new AuthUserDaoJdbc(con).create(authUser);
-                    },
-                    CFG.authJdbcUrl()
-                ),
-                new XaFunction<>(
-                    con -> {
-                        throw new RuntimeException();
-                    },
-                    CFG.userdataJdbcUrl()
-                )
+            xaTxTemplate.execute(
+                () -> {
+                    AuthUserEntity authUser = new AuthUserEntity();
+                    authUser.setUsername(testUsername);
+                    authUser.setPassword(RandomDataUtils.randomSentence(3));
+                    authUser.setEnabled(true);
+                    authUser.setAccountNonExpired(true);
+                    authUser.setAccountNonLocked(true);
+                    authUser.setCredentialsNonExpired(true);
+                    return new AuthUserDaoJdbc().create(authUser);
+                },
+                () -> {
+                    throw new RuntimeException();
+                }
             )
         );
         
@@ -142,41 +144,47 @@ public class JdbcTest {
 
     @Test
     void transactionIsolationLevel() {
-        transaction((Connection con) -> {
+        JdbcTransactionTemplate txTemplate = new JdbcTransactionTemplate(CFG.authJdbcUrl());
+        
+        txTemplate.execute(() -> {
             try {
+                Connection con = holder(CFG.authJdbcUrl()).connection();
                 assertEquals(Connection.TRANSACTION_REPEATABLE_READ, con.getTransactionIsolation());
+                return null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }, CFG.authJdbcUrl(), Connection.TRANSACTION_REPEATABLE_READ);
+        }, Connection.TRANSACTION_REPEATABLE_READ);
     }
 
     @Test
     void xaTransactionIsolationLevel() {
-        xaTransaction(
-            Connection.TRANSACTION_SERIALIZABLE,
-            new XaFunction<>(
-                con -> {
-                    try {
-                        assertEquals(Connection.TRANSACTION_SERIALIZABLE, con.getTransactionIsolation());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+        XaTransactionTemplate xaTxTemplate = new XaTransactionTemplate(
+            CFG.authJdbcUrl(), 
+            CFG.userdataJdbcUrl()
+        );
+        
+        xaTxTemplate.execute(
+            () -> {
+                try {
+                    Connection con = holder(CFG.authJdbcUrl()).connection();
+                    con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                    assertEquals(Connection.TRANSACTION_SERIALIZABLE, con.getTransactionIsolation());
                     return null;
-                },
-                CFG.authJdbcUrl()
-            ),
-            new XaFunction<>(
-                con -> {
-                    try {
-                        assertEquals(Connection.TRANSACTION_SERIALIZABLE, con.getTransactionIsolation());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            },
+            () -> {
+                try {
+                    Connection con = holder(CFG.userdataJdbcUrl()).connection();
+                    con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                    assertEquals(Connection.TRANSACTION_SERIALIZABLE, con.getTransactionIsolation());
                     return null;
-                },
-                CFG.userdataJdbcUrl()
-            )
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
         );
     }
 
@@ -203,22 +211,4 @@ public class JdbcTest {
         assertEquals(username, user.username());
     }
 
-    @Test
-    void springJdbcTest() {
-        UserDbClient usersDbClient = new UserDbClient();
-        UserJson user = usersDbClient.createUserSpringJdbc(
-                new UserJson(
-                        null,
-                        "valentin-5",
-                        null,
-                        null,
-                        null,
-                        CurrencyValues.RUB,
-                        null,
-                        null,
-                        null
-                )
-        );
-        System.out.println(user);
-    }
 }

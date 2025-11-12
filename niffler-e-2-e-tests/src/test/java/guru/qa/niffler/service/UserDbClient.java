@@ -15,17 +15,12 @@ import guru.qa.niffler.data.tpl.ChainedTransactionTemplate;
 import guru.qa.niffler.data.tpl.DataSources;
 import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
-import org.springframework.jdbc.support.JdbcTransactionManager;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Arrays;
 
 public class UserDbClient implements UserClient {
 
     private static final Config CFG = Config.getInstance();
-    private static final PasswordEncoder pe = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     private final AuthUserDao authUserDao = new AuthUserDaoSpringJdbc();
     private final AuthAuthorityDao authAuthorityDao = new AuthAuthorityDaoSpringJdbc();
@@ -44,14 +39,45 @@ public class UserDbClient implements UserClient {
 
     @Override
     public UserJson createUser(UserJson user) {
-        return xaTransactionTemplate.execute(() -> {
-                    AuthUserEntity authUser = new AuthUserEntity();
-                    authUser.setUsername(user.username());
-                    authUser.setPassword(pe.encode("12345"));
-                    authUser.setEnabled(true);
-                    authUser.setAccountNonExpired(true);
-                    authUser.setAccountNonLocked(true);
-                    authUser.setCredentialsNonExpired(true);
+        return UserJson.fromEntity(
+                xaTransaction(
+                        new XaFunction<>(
+                                con -> {
+                                    AuthUserEntity authUser = new AuthUserEntity();
+                                    authUser.setUsername(user.username());
+                                    authUser.setPassword("12345");
+                                    authUser.setEnabled(true);
+                                    authUser.setAccountNonExpired(true);
+                                    authUser.setAccountNonLocked(true);
+                                    authUser.setCredentialsNonExpired(true);
+                                    new AuthUserDaoJdbc(con).create(authUser);
+                                    new AuthAuthorityDaoJdbc(con).create(
+                                            Arrays.stream(Authority.values())
+                                                    .map(a -> {
+                                                        AuthorityEntity ae = new AuthorityEntity();
+                                                        ae.setUserId(authUser.getId());
+                                                        ae.setAuthority(a);
+                                                        return ae;
+                                                    }).toArray(AuthorityEntity[]::new)
+                                    );
+                                    return null;
+                                },
+                                CFG.authJdbcUrl()
+                        ),
+                        new XaFunction<>(
+                                con -> {
+                                    UserEntity ue = new UserEntity();
+                                    ue.setUsername(user.username());
+                                    ue.setFullname(user.fullname());
+                                    ue.setCurrency(user.currency());
+                                    return new UserDataUserDaoJdbc(con).createUser(ue);
+                                },
+                                CFG.userdataJdbcUrl()
+                        )
+                ),
+                null
+        );
+    }
 
                     AuthUserEntity createdAuthUser = authUserDao.create(authUser);
 

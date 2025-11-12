@@ -23,6 +23,9 @@ public class AuthorityEntity implements Serializable {
   @Enumerated(EnumType.STRING)
   private Authority authority;
 
+  @Column(name = "user_id", insertable = false, updatable = false)
+  private UUID userId;
+
   @ManyToOne
   @JoinColumn(name = "user_id")
   private AuthUserEntity user;

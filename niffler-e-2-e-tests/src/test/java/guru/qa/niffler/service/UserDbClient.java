@@ -1,17 +1,14 @@
 package guru.qa.niffler.service;
 
 import guru.qa.niffler.config.Config;
-import guru.qa.niffler.data.dao.AuthAuthorityDao;
-import guru.qa.niffler.data.dao.AuthUserDao;
-import guru.qa.niffler.data.dao.UserDataUserDao;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
 import guru.qa.niffler.data.entity.auth.Authority;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.entity.userdata.UserEntity;
-import guru.qa.niffler.data.impl.AuthAuthorityDaoSpringJdbc;
-import guru.qa.niffler.data.impl.AuthUserDaoSpringJdbc;
-import guru.qa.niffler.data.impl.UserDataDaoSpringJdbc;
-import guru.qa.niffler.data.tpl.ChainedTransactionTemplate;
+import guru.qa.niffler.data.repository.AuthUserRepository;
+import guru.qa.niffler.data.repository.UserdataUserRepository;
+import guru.qa.niffler.data.repository.impl.AuthUserRepositoryJdbc;
+import guru.qa.niffler.data.repository.impl.UserdataUserRepositoryJdbc;
 import guru.qa.niffler.data.tpl.DataSources;
 import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
@@ -27,9 +24,8 @@ public class UserDbClient implements UserClient {
     private static final Config CFG = Config.getInstance();
     private static final PasswordEncoder pe = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-    private final AuthUserDao authUserDao = new AuthUserDaoSpringJdbc();
-    private final AuthAuthorityDao authAuthorityDao = new AuthAuthorityDaoSpringJdbc();
-    private final UserDataUserDao udUserDao = new UserDataDaoSpringJdbc();
+    private final AuthUserRepository authUserRepository = new AuthUserRepositoryJdbc();
+    private final UserdataUserRepository userdataUserRepository = new UserdataUserRepositoryJdbc();
 
     private final TransactionTemplate txTemplate = new TransactionTemplate(
             new JdbcTransactionManager(
@@ -52,21 +48,20 @@ public class UserDbClient implements UserClient {
                     authUser.setAccountNonExpired(true);
                     authUser.setAccountNonLocked(true);
                     authUser.setCredentialsNonExpired(true);
+                    authUser.setAuthorities(
+                            Arrays.stream(Authority.values()).map(
+                                    e -> {
+                                        AuthorityEntity ae = new AuthorityEntity();
+                                        ae.setUser(authUser);
+                                        ae.setAuthority(e);
+                                        return ae;
+                                    }
+                            ).toList()
+                    );
 
-                    AuthUserEntity createdAuthUser = authUserDao.create(authUser);
-
-                    AuthorityEntity[] authorityEntities = Arrays.stream(Authority.values()).map(
-                            e -> {
-                                AuthorityEntity ae = new AuthorityEntity();
-                                ae.setUserId(createdAuthUser.getId());
-                                ae.setAuthority(e);
-                                return ae;
-                            }
-                    ).toArray(AuthorityEntity[]::new);
-
-                    authAuthorityDao.create(authorityEntities);
+                    authUserRepository.create(authUser);
                     return UserJson.fromEntity(
-                            udUserDao.createUser(UserEntity.fromJson(user)),
+                            userdataUserRepository.create(UserEntity.fromJson(user)),
                             null
                     );
                 }

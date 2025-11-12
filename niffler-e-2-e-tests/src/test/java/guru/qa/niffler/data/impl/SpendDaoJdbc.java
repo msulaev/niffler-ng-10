@@ -4,6 +4,7 @@ import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.SpendDao;
 import guru.qa.niffler.data.entity.spend.CategoryEntity;
 import guru.qa.niffler.data.entity.spend.SpendEntity;
+import guru.qa.niffler.data.extractor.SpendWithCategoryExtractor;
 import guru.qa.niffler.model.CurrencyValues;
 
 import java.sql.*;
@@ -69,6 +70,25 @@ public class SpendDaoJdbc implements SpendDao {
                 } else {
                     return Optional.empty();
                 }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Optional<SpendEntity> findByIdWithCategory(UUID id) {
+        try (PreparedStatement ps = holder(CFG.spendJdbcUrl()).connection().prepareStatement(
+                "SELECT s.id, s.username, s.spend_date, s.currency, s.amount, s.description, s.category_id, " +
+                        "c.id as cat_id, c.name as cat_name, c.username as cat_username, c.archived " +
+                        "FROM spend s " +
+                        "JOIN category c ON s.category_id = c.id " +
+                        "WHERE s.id = ?")) {
+            ps.setObject(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return new SpendWithCategoryExtractor().extractData(rs);
             }
 
         } catch (SQLException e) {

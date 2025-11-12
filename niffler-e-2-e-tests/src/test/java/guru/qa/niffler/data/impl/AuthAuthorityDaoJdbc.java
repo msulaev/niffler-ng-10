@@ -21,7 +21,9 @@ public class AuthAuthorityDaoJdbc implements AuthAuthorityDao {
         try (PreparedStatement ps = holder(CFG.authJdbcUrl()).connection().prepareStatement("INSERT INTO \"authority\" (user_id, authority) VALUES (?, ?)", PreparedStatement.RETURN_GENERATED_KEYS)) {
 
             for (AuthorityEntity a : authority) {
-                ps.setObject(1, a.getUser().getId());
+                UUID userId = a.getUserId() != null ? a.getUserId() : 
+                              (a.getUser() != null ? a.getUser().getId() : a.getId());
+                ps.setObject(1, userId);
                 ps.setString(2, a.getAuthority().name());
                 ps.addBatch();
                 ps.clearParameters();

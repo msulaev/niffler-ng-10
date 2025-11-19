@@ -3,6 +3,8 @@ package guru.qa.niffler.data.impl;
 import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.AuthUserDao;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -12,7 +14,8 @@ import java.util.UUID;
 
 import static guru.qa.niffler.data.tpl.Connections.holder;
 
-public class AuthUserDaoJdbc implements AuthUserDao {
+    private static final PasswordEncoder pe = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    private final Connection connection;
 
     private static final Config CFG = Config.getInstance();
 
@@ -23,7 +26,7 @@ public class AuthUserDaoJdbc implements AuthUserDao {
                         "VALUES (?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getUsername());
-            ps.setString(2, user.getPassword());
+            ps.setString(2, pe.encode(user.getPassword()));
             ps.setBoolean(3, user.getEnabled());
             ps.setBoolean(4, user.getAccountNonExpired());
             ps.setBoolean(5, user.getAccountNonLocked());

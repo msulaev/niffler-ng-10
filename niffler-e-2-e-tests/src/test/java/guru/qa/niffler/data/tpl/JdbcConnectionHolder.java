@@ -55,5 +55,6 @@ public class JdbcConnectionHolder implements AutoCloseable {
                     }
                 }
         );
+        threadConnections.clear();
     }
 }

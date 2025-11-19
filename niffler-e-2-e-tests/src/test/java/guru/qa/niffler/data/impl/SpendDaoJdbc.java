@@ -4,6 +4,7 @@ import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.SpendDao;
 import guru.qa.niffler.data.entity.spend.CategoryEntity;
 import guru.qa.niffler.data.entity.spend.SpendEntity;
+import guru.qa.niffler.data.extractor.SpendWithCategoryExtractor;
 import guru.qa.niffler.model.CurrencyValues;
 
 import java.sql.*;
@@ -47,28 +48,17 @@ public class SpendDaoJdbc implements SpendDao {
     }
 
     @Override
-    public Optional<SpendEntity> findSpendById(UUID id) {
-        try (PreparedStatement ps = holder(CFG.spendJdbcUrl()).connection().prepareStatement("SELECT * FROM spend WHERE id = ?")) {
+    public Optional<SpendEntity> findById(UUID id) {
+        try (PreparedStatement ps = holder(CFG.spendJdbcUrl()).connection().prepareStatement(
+                "SELECT s.id, s.username, s.spend_date, s.currency, s.amount, s.description, s.category_id, " +
+                        "c.id as cat_id, c.name as cat_name, c.username as cat_username, c.archived " +
+                        "FROM spend s " +
+                        "JOIN category c ON s.category_id = c.id " +
+                        "WHERE s.id = ?")) {
             ps.setObject(1, id);
 
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    SpendEntity spend = new SpendEntity();
-                    spend.setId(rs.getObject("id", UUID.class));
-                    spend.setUsername(rs.getString("username"));
-                    spend.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
-                    spend.setSpendDate(rs.getDate("spend_date"));
-                    spend.setAmount(rs.getDouble("amount"));
-                    spend.setDescription(rs.getString("description"));
-
-                    CategoryEntity category = new CategoryEntity();
-                    category.setId(rs.getObject("category_id", UUID.class));
-                    spend.setCategory(category);
-
-                    return Optional.of(spend);
-                } else {
-                    return Optional.empty();
-                }
+                return SpendWithCategoryExtractor.instance.extractData(rs);
             }
 
         } catch (SQLException e) {

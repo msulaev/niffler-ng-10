@@ -10,7 +10,8 @@ import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 public class JdbcTransactionTemplate {
 
     private final JdbcConnectionHolder holder;
-    private final AtomicBoolean closeAfterAction = new AtomicBoolean(true);
+
+    private final AtomicBoolean closeAfterAction = new AtomicBoolean(false);
 
     public JdbcTransactionTemplate(String jdbcUrl) {
         this.holder = Connections.holder(jdbcUrl);
@@ -25,7 +26,9 @@ public class JdbcTransactionTemplate {
         Connection connection = null;
         try {
             connection = holder.connection();
-            connection.setTransactionIsolation(isolationLvl);
+            if (connection.getAutoCommit()) {
+                connection.setTransactionIsolation(isolationLvl);
+            }
             connection.setAutoCommit(false);
             T result = action.get();
             connection.commit();
@@ -37,7 +40,10 @@ public class JdbcTransactionTemplate {
                     connection.rollback();
                     connection.setAutoCommit(true);
                 } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
+                    String message = ex.getMessage();
+                    if (message == null || !message.contains("already closed")) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
             throw new RuntimeException(e);

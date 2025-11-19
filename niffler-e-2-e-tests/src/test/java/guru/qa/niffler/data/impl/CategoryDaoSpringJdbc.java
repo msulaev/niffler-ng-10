@@ -66,7 +66,14 @@ public class CategoryDaoSpringJdbc implements CategoryDao {
 
     @Override
     public Optional<CategoryEntity> findCategoryById(UUID id) {
-        return Optional.empty();
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.spendJdbcUrl()));
+        return Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        "SELECT * FROM category WHERE id = ?",
+                        CategoryEntityRowMapper.instance,
+                        id
+                )
+        );
     }
 
     @Override

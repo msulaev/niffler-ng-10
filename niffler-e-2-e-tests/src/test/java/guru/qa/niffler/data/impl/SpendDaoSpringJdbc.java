@@ -3,6 +3,7 @@ package guru.qa.niffler.data.impl;
 import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.SpendDao;
 import guru.qa.niffler.data.entity.spend.SpendEntity;
+import guru.qa.niffler.data.extractor.SpendWithCategoryExtractor;
 import guru.qa.niffler.data.mapper.SpendEntityRowMapper;
 import guru.qa.niffler.data.tpl.DataSources;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,14 +45,16 @@ public class SpendDaoSpringJdbc implements SpendDao {
     }
 
     @Override
-    public Optional<SpendEntity> findSpendById(UUID id) {
+    public Optional<SpendEntity> findById(UUID id) {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.spendJdbcUrl()));
-        return Optional.ofNullable(
-                jdbcTemplate.queryForObject(
-                        "SELECT * FROM spend WHERE id = ?",
-                        SpendEntityRowMapper.instance,
-                        id
-                )
+        return jdbcTemplate.query(
+                "SELECT s.id, s.username, s.spend_date, s.currency, s.amount, s.description, s.category_id, " +
+                        "c.id as cat_id, c.name as cat_name, c.username as cat_username, c.archived " +
+                        "FROM spend s " +
+                        "JOIN category c ON s.category_id = c.id " +
+                        "WHERE s.id = ?",
+                SpendWithCategoryExtractor.instance,
+                id
         );
     }
 

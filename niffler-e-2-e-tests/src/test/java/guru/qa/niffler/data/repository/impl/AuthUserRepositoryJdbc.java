@@ -2,17 +2,13 @@ package guru.qa.niffler.data.repository.impl;
 
 import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
-import guru.qa.niffler.data.entity.auth.Authority;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.extractor.AuthUserWithAuthoritiesExtractor;
-import guru.qa.niffler.data.mapper.AuthUserEntityRowMapper;
 import guru.qa.niffler.data.repository.AuthUserRepository;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -75,7 +71,7 @@ public class AuthUserRepositoryJdbc implements AuthUserRepository {
             ps.execute();
 
             try (ResultSet rs = ps.getResultSet()) {
-                return new AuthUserWithAuthoritiesExtractor().extractData(rs);
+                return AuthUserWithAuthoritiesExtractor.instance.extractData(rs);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -95,7 +91,7 @@ public class AuthUserRepositoryJdbc implements AuthUserRepository {
             ps.execute();
 
             try (ResultSet rs = ps.getResultSet()) {
-                return new AuthUserWithAuthoritiesExtractor().extractData(rs);
+                return AuthUserWithAuthoritiesExtractor.instance.extractData(rs);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -55,7 +55,7 @@ public class UserdataUserRepositoryJdbc implements UserdataUserRepository {
             ps.execute();
             
             try (ResultSet rs = ps.getResultSet()) {
-                return new UserWithFriendshipsExtractor().extractData(rs);
+                return UserWithFriendshipsExtractor.instance.extractData(rs);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

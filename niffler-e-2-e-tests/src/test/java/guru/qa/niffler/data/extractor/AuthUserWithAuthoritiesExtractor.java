@@ -12,6 +12,11 @@ import java.util.*;
 
 public class AuthUserWithAuthoritiesExtractor implements ResultSetExtractor<Optional<AuthUserEntity>> {
 
+    public static final AuthUserWithAuthoritiesExtractor instance = new AuthUserWithAuthoritiesExtractor();
+
+    private AuthUserWithAuthoritiesExtractor() {
+    }
+
     @Override
     public Optional<AuthUserEntity> extractData(ResultSet rs) throws SQLException, DataAccessException {
         Map<UUID, AuthUserEntity> userMap = new HashMap<>();

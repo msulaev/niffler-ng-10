@@ -53,7 +53,7 @@ public class SpendDaoSpringJdbc implements SpendDao {
                         "FROM spend s " +
                         "JOIN category c ON s.category_id = c.id " +
                         "WHERE s.id = ?",
-                new SpendWithCategoryExtractor(),
+                SpendWithCategoryExtractor.instance,
                 id
         );
     }

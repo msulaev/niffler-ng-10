@@ -13,6 +13,11 @@ import java.util.*;
 
 public class UserWithFriendshipsExtractor implements ResultSetExtractor<Optional<UserEntity>> {
 
+    public static final UserWithFriendshipsExtractor instance = new UserWithFriendshipsExtractor();
+
+    private UserWithFriendshipsExtractor() {
+    }
+
     @Override
     public Optional<UserEntity> extractData(ResultSet rs) throws SQLException, DataAccessException {
         Map<UUID, UserEntity> userMap = new HashMap<>();

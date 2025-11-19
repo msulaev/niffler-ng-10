@@ -13,6 +13,11 @@ import java.util.UUID;
 
 public class SpendWithCategoryExtractor implements ResultSetExtractor<Optional<SpendEntity>> {
 
+    public static final SpendWithCategoryExtractor instance = new SpendWithCategoryExtractor();
+
+    private SpendWithCategoryExtractor() {
+    }
+
     @Override
     public Optional<SpendEntity> extractData(ResultSet rs) throws SQLException, DataAccessException {
         if (rs.next()) {

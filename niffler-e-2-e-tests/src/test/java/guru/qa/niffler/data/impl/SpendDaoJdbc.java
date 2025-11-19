@@ -58,7 +58,7 @@ public class SpendDaoJdbc implements SpendDao {
             ps.setObject(1, id);
 
             try (ResultSet rs = ps.executeQuery()) {
-                return new SpendWithCategoryExtractor().extractData(rs);
+                return SpendWithCategoryExtractor.instance.extractData(rs);
             }
 
         } catch (SQLException e) {

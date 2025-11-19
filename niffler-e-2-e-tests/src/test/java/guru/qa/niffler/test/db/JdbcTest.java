@@ -448,7 +448,7 @@ public class JdbcTest {
 
         Optional<SpendEntity> foundSpend = txTemplate.execute(() -> {
             SpendDaoJdbc spendDao = new SpendDaoJdbc();
-            return spendDao.findByIdWithCategory(spendId);
+            return spendDao.findById(spendId);
         });
 
         assertTrue(foundSpend.isPresent());

@@ -45,19 +45,7 @@ public class SpendDaoSpringJdbc implements SpendDao {
     }
 
     @Override
-    public Optional<SpendEntity> findSpendById(UUID id) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.spendJdbcUrl()));
-        return Optional.ofNullable(
-                jdbcTemplate.queryForObject(
-                        "SELECT * FROM spend WHERE id = ?",
-                        SpendEntityRowMapper.instance,
-                        id
-                )
-        );
-    }
-
-    @Override
-    public Optional<SpendEntity> findByIdWithCategory(UUID id) {
+    public Optional<SpendEntity> findById(UUID id) {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.spendJdbcUrl()));
         return jdbcTemplate.query(
                 "SELECT s.id, s.username, s.spend_date, s.currency, s.amount, s.description, s.category_id, " +

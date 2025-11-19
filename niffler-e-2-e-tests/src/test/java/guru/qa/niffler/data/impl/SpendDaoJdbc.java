@@ -48,37 +48,7 @@ public class SpendDaoJdbc implements SpendDao {
     }
 
     @Override
-    public Optional<SpendEntity> findSpendById(UUID id) {
-        try (PreparedStatement ps = holder(CFG.spendJdbcUrl()).connection().prepareStatement("SELECT * FROM spend WHERE id = ?")) {
-            ps.setObject(1, id);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    SpendEntity spend = new SpendEntity();
-                    spend.setId(rs.getObject("id", UUID.class));
-                    spend.setUsername(rs.getString("username"));
-                    spend.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
-                    spend.setSpendDate(rs.getDate("spend_date"));
-                    spend.setAmount(rs.getDouble("amount"));
-                    spend.setDescription(rs.getString("description"));
-
-                    CategoryEntity category = new CategoryEntity();
-                    category.setId(rs.getObject("category_id", UUID.class));
-                    spend.setCategory(category);
-
-                    return Optional.of(spend);
-                } else {
-                    return Optional.empty();
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public Optional<SpendEntity> findByIdWithCategory(UUID id) {
+    public Optional<SpendEntity> findById(UUID id) {
         try (PreparedStatement ps = holder(CFG.spendJdbcUrl()).connection().prepareStatement(
                 "SELECT s.id, s.username, s.spend_date, s.currency, s.amount, s.description, s.category_id, " +
                         "c.id as cat_id, c.name as cat_name, c.username as cat_username, c.archived " +
